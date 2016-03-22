@@ -1,18 +1,21 @@
 # see comments in test/run-docker.sh about host networking
-boulder:
-    build: .
-    dockerfile: Dockerfile
-    net: host
-    environment:
-        MYSQL_CONTAINER: "yes"
 mysql:
     image: mariadb:10.0
-    net: host
     environment:
         MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
     command: mysqld --bind-address=127.0.0.1
+    ports:
+      - 4000:4000
+      - 4002:4002
+      - 4003:4003
 rabbitmq:
     image: rabbitmq:3
-    net: host
+    net: "container:mysql"
     environment:
         RABBITMQ_NODE_IP_ADDRESS: "127.0.0.1"
+boulder:
+    build: .
+    dockerfile: Dockerfile
+    net: "container:mysql"
+    environment:
+        MYSQL_CONTAINER: "yes"

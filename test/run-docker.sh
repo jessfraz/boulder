@@ -31,12 +31,14 @@ is_running(){
 # 127.0.0.1 to avoid exposing services beyond the host.
 
 if [[ "$(is_running boulder-mysql)" != "true" ]]; then
-	# bring up mysql mariadb container - no need to publish port
-	# 3306 with host networking
+	# bring up mysql mariadb container
+	# since we will reuse this net namespace for boulder, publish those ports
 	docker run -d \
-		--net host \
 		-e MYSQL_ALLOW_EMPTY_PASSWORD=yes \
 		--name boulder-mysql \
+		-p 4000:4000 \
+		-p 4002:4002 \
+		-p 4003:4003 \
 		mariadb:10.0 mysqld --bind-address=127.0.0.1
 fi
 
@@ -44,7 +46,7 @@ if [[ "$(is_running boulder-rabbitmq)" != "true" ]]; then
 	# bring up rabbitmq container - no need to publish port 5672
 	# with host networking
 	docker run -d \
-		--net host \
+		--net container:boulder-mysql \
 		-e RABBITMQ_NODE_IP_ADDRESS=127.0.0.1 \
 		--name boulder-rabbitmq \
 		rabbitmq:3
@@ -67,7 +69,7 @@ fi
 # The excluding `-d` command makes the instance interactive, so you can kill
 # the boulder container with Ctrl-C.
 docker run --rm -it \
-	--net host \
+	--net container:boulder-mysql \
 	-e MYSQL_CONTAINER=yes \
 	"${fake_dns_args[@]}" \
 	--name boulder \
